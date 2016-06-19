@@ -19,6 +19,7 @@ function init() {
 }
 
 function updateCanvas() {
+    cv.clear("#ffffff")
     drawCross()
 
     cv.Context.save()
@@ -29,6 +30,7 @@ function updateCanvas() {
 }
 
 function createPoint() {
+    point.length = 0
     for (var i = 0; i < 2; ++i) {
         point.push({
             x: 0.5 * (Math.random() - 0.5) * cv.Width,
@@ -102,5 +104,5 @@ function onClickCanvas(event) {
     var x = event.clientX - rect.left
     var y = event.clientY - rect.top
 
-    updateCanvas()
+    init()
 }
