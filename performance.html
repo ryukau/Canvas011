@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Performance Comparison</title>
+	</head>
+	<body>
+        <h1>circumcircle</h1>
+
+        <p>
+            <a href="https://gist.github.com/mutoo/5617691">mutooさん、yahiko00さんの実装</a>と自前の実装の比較。
+        </p>
+
+        <p>
+            自前 : <span id="spanTimeA"></span>
+        </p>
+        <p>
+            yahiko00 : <span id="spanTimeB"></span>
+        </p>
+        <p>
+            自前2 : <span id="spanTimeC"></span>
+        </p>
+        <p>
+            mutoo : <span id="spanTimeD"></span>
+        </p>
+
+        <script>
+        const REPEAT = 1e6;
+
+        timer("spanTimeA", function() {
+            funcA();
+        });
+        timer("spanTimeB", function() {
+            funcB();
+        });
+        timer("spanTimeC", function() {
+            funcC();
+        });
+        timer("spanTimeD", function() {
+            funcD();
+        });
+
+        function timer(elemId, func) {
+            var timeStart = Date.now();
+            func();
+            var timeSpent = Date.now() - timeStart;
+            document.getElementById(elemId).textContent = timeSpent + " [ms]";
+        }
+
+        function funcA() {
+            var sum = 0;
+            for (var i = 0; i < REPEAT; ++i) {
+                var point = createPoint();
+                sum += circumcircle(point[0], point[1], point[2]).r;
+            }
+            return sum;
+        }
+
+        function funcB() {
+            var sum = 0;
+            for (var i = 0; i < REPEAT; ++i) {
+                var point = createPoint();
+                sum += circumcircle2(point[0], point[1], point[2]).r;
+            }
+            return sum;
+        }
+
+        function funcC() {
+            var sum = 0;
+            for (var i = 0; i < REPEAT; ++i) {
+                var point = createPoint();
+                sum += circumcircle3(point[0], point[1], point[2]).r;
+            }
+            return sum;
+        }
+
+        function funcD() {
+            var sum = 0;
+            for (var i = 0; i < REPEAT; ++i) {
+                var point = createPoint();
+                sum += circumcircle4(point[0], point[1], point[2]).r;
+            }
+            return sum;
+        }
+
+        function createPoint() {
+            var point = [];
+            for (var i = 0; i < 3; ++i) {
+                point.push({
+                    x: Math.random(),
+                    y: Math.random()
+                });
+            }
+
+            point[0] = {
+                x: 200,
+                y: 100
+            };
+            point[1] = {
+                x: 110,
+                y: 120
+            };
+            point[2] = {
+                x: 210,
+                y: 300
+            };
+            return point;
+        }
+
+        function circumcircle(a, b, c) {
+            var EPSILON = 1.0 / 1048576.0,
+                ax = a.x,
+                ay = a.y,
+                bx = b.x,
+                by = b.y,
+                cx = c.x,
+                cy = c.y,
+                xab,yab,xbc,ybc,x,y,subxax,subyay;
+
+            if (Math.abs(ay - by) < EPSILON && Math.abs(by - cy) < EPSILON) {
+                console.log("circumcircle fail");
+                return null;
+            }
+            else if (Math.abs(ay - by) < EPSILON || Math.abs(by - cy) < EPSILON) {
+                yab = - (ay - by) / (ax - bx);
+                xab = ((ax + bx) - yab * (ay + by)) / 2;
+                ybc = - (by - cy) / (bx - cx);
+                xbc = ((bx + cx) - ybc * (by + cy)) / 2;
+                y = (xbc - xab) / (yab - ybc);
+                x = yab * y + xab;
+            }
+            else {
+                xab = - (ax - bx) / (ay - by);
+                yab = ((ay + by) - xab * (ax + bx)) / 2;
+                xbc = - (bx - cx) / (by - cy);
+                ybc = ((by + cy) - xbc * (bx + cx)) / 2;
+                x = (yab - ybc) / (xbc - xab);
+                y = xab * x + yab;
+            }
+
+            subxax = x - ax;
+            subyay = y - ay;
+            return {
+                x: x,
+                y: y,
+                r: Math.sqrt(subxax * subxax + subyay * subyay)
+            };
+        }
+
+        function circumcircle3(a, b, c) {
+            var EPSILON = 9.53674316e-7,
+                ax = a.x,
+                ay = a.y,
+                bx = b.x,
+                by = b.y,
+                cx = c.x,
+                cy = c.y,
+                abssubayby = Math.abs(ay - by),
+                abssubbycy = Math.abs(by - cy),
+                m1,m2,m3,x,y;
+
+            if (abssubayby < EPSILON && abssubbycy < EPSILON) {
+                return null;
+            }
+
+            if (abssubayby < EPSILON) {
+                m1 = - (bx - cx) / (by - cy);
+                x = (ax + bx) / 2.0;
+                y = (x - (bx + cx) / 2.0) * m1 - (by + cy) / 2.0;
+            }
+            else if (abssubbycy < EPSILON) {
+                m1 = - (ax - bx) / (ay - by);
+                x = (bx + cx) / 2.0;
+                y = (x - (ax + bx) / 2.0) * m1 - (ay + by) / 2.0;
+            }
+            else {
+                m1 = - (ax - bx) / (ay - by);
+                m2 = - (bx - cx) / (by - cy);
+                m3 = ((ay + by) - m1 * (ax + bx)) / 2.0;
+                x = (m3 - ((by + cy) - m2 * (bx + cx)) / 2.0) / (m2 - m1);
+                y = m1 * x + m3;
+            }
+
+            m1 = x - ax;
+            m2 = y - ay;
+            return {
+                x: x,
+                y: y,
+                r: Math.sqrt(m1 * m1 + m2 * m2)
+            };
+        }
+
+        function circumcircle2(a, b, c) {
+            var EPSILON = 1.0 / 1048576.0;
+            var ax = a.x,
+                ay = a.y,
+                bx = b.x,
+                by = b.y,
+                cx = c.x,
+                cy = c.y,
+                fabsy1y2 = Math.abs(ay - by),
+                fabsy2y3 = Math.abs(by - cy),
+                xc, yc, m1, m2, mx1, mx2, my1, my2, dx, dy;
+
+            /* Check for coincident points */
+            if(fabsy1y2 < EPSILON && fabsy2y3 < EPSILON)
+                throw new Error("Eek! Coincident points!");
+
+            if(fabsy1y2 < EPSILON) {
+                m2  = -((cx - bx) / (cy - by));
+                mx2 = (bx + cx) / 2.0;
+                my2 = (by + cy) / 2.0;
+                xc  = (bx + ax) / 2.0;
+                yc  = m2 * (xc - mx2) + my2;
+            }
+
+            else if(fabsy2y3 < EPSILON) {
+                m1  = -((bx - ax) / (by - ay));
+                mx1 = (ax + bx) / 2.0;
+                my1 = (ay + by) / 2.0;
+                xc  = (cx + bx) / 2.0;
+                yc  = m1 * (xc - mx1) + my1;
+            }
+
+            else {
+                m1  = -((bx - ax) / (by - ay));
+                m2  = -((cx - bx) / (cy - by));
+                mx1 = (ax + bx) / 2.0;
+                mx2 = (bx + cx) / 2.0;
+                my1 = (ay + by) / 2.0;
+                my2 = (by + cy) / 2.0;
+                xc  = (m1 * mx1 - m2 * mx2 + my2 - my1) / (m1 - m2);
+                yc  = (fabsy1y2 > fabsy2y3) ?
+                m1 * (xc - mx1) + my1 :
+                m2 * (xc - mx2) + my2;
+            }
+
+            dx = bx - xc;
+            dy = by - yc;
+            return {
+                x: xc,
+                y: yc,
+                r: Math.sqrt(dx * dx + dy * dy)
+            };
+        }
+
+        function circumcircle4(a, b, c) {
+            var A = b.x - a.x,
+                B = b.y - a.y, // ベクトル b - a
+                C = c.x - a.x,
+                D = c.y - a.y, // ベクトル c - a
+                E = A * (a.x + b.x) + B * (a.y + b.y), // ベクトル b - a と a + b の内積。
+                F = C * (a.x + c.x) + D * (a.y + c.y), // ベクトル c - a と a + c の内積。
+                G = 2 * (A * (c.y - b.y) - B * (c.x - b.x)), // ベクトル b - a と c - a の外積。この値が十分に小さい場合は a, b, c が直線上に並んでいる。
+                minx, miny, dx, dy
+
+            /* If the points of the triangle are collinear, then just find the
+            * extremes and use the midpoint as the center of the circumcircle. */
+            if(Math.abs(G) < 0.000001) {
+                minx = Math.min(a.x, b.x, c.x)
+                miny = Math.min(a.y, b.y, c.y)
+                dx   = (Math.max(a.x, b.x, c.x) - minx) * 0.5
+                dy   = (Math.max(a.y, b.y, c.y) - miny) * 0.5
+
+                return {
+                    x: minx + dx,
+                    y: miny + dy,
+                    r: Math.sqrt(dx * dx + dy * dy)
+                }
+            }
+
+            else {
+                var x = (D*E - B*F) / G
+                var y = (A*F - C*E) / G
+                dx = x - a.x
+                dy = y - a.y
+
+                return {
+                    x: x,
+                    y: y,
+                    r: Math.sqrt(dx * dx + dy * dy)
+                }
+            }
+        }
+        </script>
+	</body>
+</html>
